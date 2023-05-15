@@ -6,10 +6,8 @@ const secret_key = "authapp secret ukey";
 
 //handle database error
 const handleError = (err) => {
-    let errors = { name: "", password: "" }
     if (err.code === 11000) {
         return "Name is already exists";
-
     }
 
     if (err.message.includes("Users validation failed")) {
@@ -40,37 +38,32 @@ module.exports.doSignup = async (req, res) => {
     }
 }
 
+
+//get user details
 module.exports.getUserDetails = async (req, res) => {
     try {
-
-        const authHeader = req.headers.authorization;
-        console.log(authHeader);
-        const token = authHeader.split(' ')[1];
-        jwt.verify(token, secret_key, async (err, decoded) => {
-
-            let user = await User.find({ _id: decoded.id }, { password: 0 });
-            if (user) {
-                res.status(201).json({ user: user[0] });
-            } else {
-                throw new Error("User not Exist")
-            }
-        });
+        let user = await User.find({ _id: req.userId }, { password: 0 });
+        if (user) {
+            res.status(201).json({ user: user[0] });
+        } else {
+            throw new Error("User not Exist")
+        }
     } catch (err) {
         res.json({ status: false, message: err.message });
     }
 }
 
+
+//update user details
 module.exports.updateProfile = async (req, res) => {
     try {
         let image;
-        const authHeader = req.headers.authorization;
-        const token = authHeader.split(' ')[1];
 
-        //taking userid from jwt token
-        jwt.verify(token, secret_key, async (err, decoded) => {
+        let userDetails = await User.find({ _id: req.userId }, { password: 0 });
+        
+        if (userDetails) {
 
-            let userDetails = await User.find({ _id: decoded.id }, { password: 0 });
-
+            //seting image
             if (req.files.userImage) {
                 req.files.userImage[0].path = req.files.userImage[0].path.replace('public\\', "");
                 image = req.files.userImage[0];
@@ -78,20 +71,25 @@ module.exports.updateProfile = async (req, res) => {
                 image = userDetails.image;
             }
 
-            let user = await User.updateOne({ _id: decoded.id }, {
+            //upadting database
+            let user = await User.updateOne({ _id: req.userId }, {
                 $set: {
                     name: req.body.name,
                     address: req.body.address,
                     image
                 }
             })
+
+            //response
             if (user) {
                 res.status(201).json({ message: "User details updated successfully" });
             } else {
                 throw new Error("Update Error")
             }
-        });
 
+        } else {
+            throw new Error("User Not Exist")
+        }
     } catch (err) {
         res.json({ status: false, message: err.message });
     }
