@@ -1,8 +1,9 @@
 var express = require('express');
 const router = express.Router();
-const { userSignup }= require('../controller/userController')
+const { doSignup }= require('../controller/userController');
+const { uploadImage } = require('../middleware/image-upload');
 
-/* GET users listing. */
-router.get('/signup', userSignup)
+//user signup
+router.post('/signup', uploadImage, doSignup);
 
 module.exports = router;
